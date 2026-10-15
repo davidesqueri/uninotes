@@ -1,5 +1,5 @@
-#uni 27/09/2023
-## Basi:
+#uni
+## Introduzione
 È un linguaggio _Case Sensitive_, ovvero distingue fra maiuscole e minuscole.
 Ogni statement seguito da `;`diventa una istruzione espressiva.
 ## Codice:

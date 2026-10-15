@@ -1,5 +1,5 @@
 #uni 
-# Layering
+# Introduction
 **Protocol Layering** offers many advantages: it provides a structured way to discuss system components and enables modularity, making it easier to update system components.
 
 Some researchers are opposed to layering for many reasons, for example one layer may duplicate lower-layer functionality, or one layer may need information held only in another layer, which violates the goal of separation of layers.

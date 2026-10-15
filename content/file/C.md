@@ -39,3 +39,4 @@ Viene ancora usato sopratutto per programmazione embedded.
 # links
 - [[OLD Unix Socket programming in C]] 
 - [[C standard library]] 
+- [[C++]] 

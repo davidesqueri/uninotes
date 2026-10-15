@@ -7,23 +7,21 @@ Il numero di capitolo, quando indicato, fa riferimento al libro "Computer Networ
 [[Indice Reti Informatiche]] 
 Argomenti
 1. Computer Networks and the Internet:
-	[[Internet Protocol Stack]] 
+	[[Internet Protocol Stack]] (1)
 2. Network Applications:
-	[[Network Applications]] 
+	[[Network Applications]] (2)
 3. Transport Layer
-	[[Transport Layer]] 
-4. The Network Layer: the Data Plane
-5. The Network Layer: the Control Plane
-	[[Control Plane]]
-[[Internetworking]] 
-6. The Link Layer and LANs:
-	[[Direct Connection Networks]] 
-	[[Packet Switched Networks]] 
-7. Wireless and Mobile networks:
+	[[Transport Layer]] (3)
+4. The Network Layer:
+	[[Data Plane]] (4)
+	[[Control Plane]] (5)
+5. The Link Layer and LANs:
+	[[Link Layer]] (6)
+6. Wireless and Mobile networks:
 	[[Wireless and Mobile Networks]] 
-8. Security in computer networks:
+7. Security in computer networks:
 	[[Network Security]] 
-9. Multimedia networking
+8. Multimedia networking
 
 Laboratorio:
 [[Configurazione dell'interfaccia di rete]] 

@@ -1,1 +1,1 @@
-![[Internetworking#3.3 Network Address Translation]]
+![[Data Plane#3.3 Network Address Translation]]

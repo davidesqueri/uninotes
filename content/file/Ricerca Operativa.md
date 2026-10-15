@@ -1,7 +1,8 @@
 #uni 
-Prof Massimo Pappalardo
+Prof. Massimo Pappalardo
 [[Informazioni sul Corso di Ricerca Operativa]] 
 [[Cosa saper fare all'esame di Ricerca Operativa]] 
+
 Argomenti
 [[Introduzione alla Ricerca Operativa]] 
 Parte 1: PL

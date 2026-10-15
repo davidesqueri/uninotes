@@ -2,7 +2,7 @@
 number headings: auto, first-level 1, max 3, 1.1
 ---
 #uni 
-# 1 Principles of network apps (2.1)
+# 1 Introduction
 Creating a network app means writing a program that runs on different end systems and communicates over a network.
 There is no need to write software for device on the network-core: these devices do not run user applications. Routers don't need to implement the whole [[Internet Protocol Stack]].
 Running applications only on systems on the edge of internet allows for a rapid app development and propagation.
@@ -12,7 +12,7 @@ The two most important application paradigms are:
 - [[Client-Server]]: web, [[http]], e-mail, smtp, imap, [[dns]] 
 - [[Peer to peer]]: [[bitTorrent]] 
 ### 1.1.1 Client-Server paradigm
-A server is an always-on host with a permanent IP address ([[Internetworking#3 IP the internet protocol]]), often found in data centers, for scaling advantages.
+A server is an always-on host with a permanent IP address ([[Data Plane#3 IP the internet protocol]]), often found in data centers, for scaling advantages.
 
 Clients contact and communicate with the server intermittently, the may have dynamic IP addresses and *do not* communicate directly with each other.
 ### 1.1.2 Peer-to-Peer paradigm
@@ -254,8 +254,9 @@ This is a command/response interaction, like http:
 3. the client side of the sender's SMTP server opens a TCP connection with the destination user's server
 4. the servers do a SMTP application layer handshake:
 	1. HELO
-	2. FROM
-	3. RCPT TO
+	2. AUTH LOGIN
+	3. FROM
+	4. RCPT TO
 5. the email is sent over the SMTP connection
 	1. DATA
 6. the receiving server puts the email in the destination user's mailbox
@@ -573,3 +574,112 @@ A more complete strategy is to perform periodic real-time measurements of delay 
 ### 4.5.2 Netflix Case Study
 Information regarding Netflix account is stored on the *Netflix registration and accounting servers*. The user browses the Netflix catalog, which is stored on *Amazon cloud*. These Amazon cloud servers upload copies of the multiple versions of these videos to the *DASH CDN servers*.
 When the user asks the Amazon cloud servers for a piece of content, the servers return the manifest file for it, at this point the user's machine contacts the correct DASH CDN server and the streaming begins.
+# 5 Sockets (2.7)
+Sockets are a mechanism of communication between processes, on the same host or on different hosts: a socket is an end of a communication channel, an abstraction implemented by the operating system.
+A socket is identified by an address, which is composed of an IP address and a port number, which respectively identify the host and the process running on said host.
+## 5.1 Blocking vs Non-Blocking
+Sockets are by default set to be **blocking**: operations performed on a blocking socket can cause the execution to halt and wait for the result. These are the functions that can be blocking:
+- `connect()`
+- `accept()`
+- `send()`
+- `recv()` 
+When an operation on a non-blocking socket would halt a blocking one, it instead returns `-1` and sets `errno` accordingly (`EAGAIN`/`EWOULDBLOCK`).
+## 5.2 TCP vs UDP
+As we learn in [[Transport Layer]], TCP guarantees that every sent byte arrives at destination, but one cannot know in advance *in how many blocks* they will arrive. This means that when the receiving host executes a `recv()` he has no way of knowing if every byte arrived, some could still be on the way. When working with TCP sockets one must account for this in both sender and receiver code: for example by introducing some sequence of bytes that indicates the end of the message, and maybe by inserting the `send()` function in a loop that keeps track of how many bytes it has sent.
+
+UDP as we know is not connection-oriented and instead either delivers the whole message or fails.
+It is still possible to execute a `connect()` on a UDP socket: it will send and receive datagrams only to/from the address specified in the `connect()` but *will not initiate a connection*.
+
+It is not mandatory to *bind* a UDP socket to a address to send messages through it, it must be done though to pass firewall or NAT restrictions.
+## 5.3 Sending Data
+
+### 5.3.1 Endianness
+When designing a network application one must account for system endianness differences between the two (or more) communicating hosts:
+machines can either be **big-endian** or **little-endian**.
+A **big-endian** system puts the Most Significant Bit (MSB) "first": this means that when storing an Integer for example the lower the address of a location the more significant the bits contained in it are.
+
+Different systems use different endianness and this must be accounted for when working on low-level code: it is good practice to convert every multi-byte variable to **network byte order** (big-endian) before sending them through a socket.
+The receiving end then has to convert this data back to **host byte order**, which could be either big or little endian – the programmer has often no way of knowing beforehand.
+## 5.4 Closing a connection
+If a process executes a `close()`, when the other process tries to `recv()` from the (now disconnected) socket, it will obtain `FIN` and receive `0` bytes, this indicates `EOF` on the socket.
+
+If instead a process quits without a `close()`, when the other process executes a `recv()`, it will read `-1` bytes, this means `RST`, and the global variable `errno` gets set accordingly.
+
+When a process executes a `ssize_t n = recv()` on a non blocking socket and reads `n=-1` bytes it must read the global `errno` variable, if the latter is set to `EAGAIN` or `EWOULDBLOCK` it means the other process hasn't sent anything, if the variable is set to anything else, the `n=-1` must be interpreted as `RST`: the other process has quit without executing a `close()`.
+## 5.5 Unix Socket primitives
+```C
+#include <arpa/inet.h>
+#incldue <sys/types.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <unistd.h>
+
+/* @brief Creates a new socket
+ * domain: family of protocols to utilize: AF_LOCAL or AF_INET
+ * type: SOCK_STREAM or SOCK_DGRAM, add `| SOCK_NONBLOCK` for a non-blocking socket
+ * protocol: simply set it to 0
+ * @return returns the newly created socket's descriptor or -1 on error
+ */
+int socket(int domain, int type, int protocol);
+
+/* @brief Assigns a address (IP+port) to a socket
+ * addr: pointer to the address (struct sockaddr_in) one wishes to bind to the socket
+ * addrlen: sizeof(addr)
+ * @return returns 0 on success, -1 on error
+ */
+int bind(int sockfd, const struct sockaddr *addr, socklen_t addrlen);
+
+/* @brief Sets the (TCP) socket to passive listening for new connection requests; non blocking
+ * sockfd: socket descriptor
+ * backlog: number of maximum hosts in queue 
+ * @return returns 0 on success, -1 on error
+ */
+int listen(int sockfd, int backlog);
+
+/* @brief Initiates a TCP connection between a local and a remote socket; blocking
+ * sockfd: descriptor of the local socket
+ * addr: pointer to the address (sockaddr_in) of the remote socket
+ * @return returns 0 on success, -1 on error
+ */
+int connect(int sockfd, const struct sockaddr *addr, socklen_t addrlen);
+
+/* @brief Accepts a TCP connection request; blocking
+ * sockfd: descriptor of the listening socket
+ * addr: pointer to a blank struct sockaddr_in that will be filled in with the client's address
+ * @return returns the descriptor of the new connected socket on success, -1 on error
+ */
+int accept(int sockfd, struct sockaddr *addr, socklen_t *addrlen);
+
+/* @brief Sends a message through a TCP connected socket; blocking: blocks until it has sent the whole message buffer
+ * buf: pointer to the message buffer 
+ * len: length in bytes of the buffer
+ * flags: set it to 0
+ * @return returns the number of sent bytes on success, -1 on error
+ */
+ssize_t send(int sockfd, const void *buf, size_t len, int flags);
+
+/* @brief Sends a UDP message through a specified socket to a desired address; blocking: blocks until it has sent the whole message
+ * @return returns the number of sent bytes on success, -1 on error
+ */
+ssize_t sendto(int sockfd, const void *buf, size_t len, int flags,const struct sockaddr *dest_addr, socklen_t addrlen);
+
+/* @brief Retrieves a message from a TCP-connected socket; blocking: blocks until it reads anything
+ * flags: set it to 0, or MSG_WAITALL
+ * @return returns the number of received bytes on success, 0 if the remote socket got closed, -1 on error
+ */
+ssize_t recv(int sockfd, const void *buf, size_t len, int flags);
+
+/* @brief Retrieves a message from a socket; blocking
+ * len: length of how many bytes to read
+ * src_addr: pointer to where to save the source address, can be NULL
+ * addrlen: value-result argument: must be set to the size of the allocated structure for the address and will be set to the actual size of the source address
+ * @return returns the number of received bytes on success, 0 if the remote socket got closed, -1 on error
+ */
+ssize_t recvfrom(int sockfd, const void *buf, size_t len, int flags, struct sockaddr *src_addr, socklen_t addrlen);
+
+/* @brief Closes a Socket
+ * @return returns 0 on success, -1 on error
+ */
+int close(int fd);
+```
+## 5.6 I/O Multiplexing

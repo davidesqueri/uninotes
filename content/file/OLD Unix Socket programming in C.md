@@ -276,13 +276,6 @@ int main () {
 # Esempio di connessione
 ![[Pasted image 20251103160053.png]]
 # Server Concorrente
-## Creazione di Processo Figlio
-Come li distinguo? 
-```c
-p = fork()
-```
-- il padre vede `p = PID figlio`
-- il figlio vede `p = 0` 
 ## Uso di Fork
 Il figlio deve cancellare il socket in ascolto.
 Il padre deve cancellare il socket per la comunicazione.
@@ -315,44 +308,12 @@ while (1) {
 	close(new_sd);
 }
 ```
-## Uso dei thread
-```c
-#include <pthread.h>
-```
-e per compilare
-```shell
-gcc <opzioni> file.c -pthread
-```
-Tipi e funzioni da usare:
-```c
-pthread_t
-
-pthread_mutex_t // semaforo per proteggere le risorse condivise
-
-int pthread_create(pthread_t*thread, const pthread_attr_t*attr, void*(*start_routine)(void*),void*arg) // crea un nuovo thread che parte eseguendo start_routine(void*)
-
-int pthread_join(pthread_t thread, void** retval) // un thread può bloccarsi in attesa della terminazione di un altro thread
-
-void pthread_exit(void* retval) //per terminare un thread e mettere a disposizione un suo risultato (retval)
-```
 # Socket Bloccanti e non bloccanti
-## Socket bloccante
-Di default un socket è bloccante, tutte le operazioni su di esso fermano l'esecuszione del processo in attesa del risultato:
-- connect
-- accept
-- send
-- recv: si blocca finché non c'è un qualche dato disponibile
-	- ritorna 0 finchè tutto il messaggio richiesto non è disponibile, con il flag MSG_WAITALL
-## Socket non bloccante
+Di default i socket sono bloccanti.
 Un socket può essere settato come non bloccante:
 ```c
 socket(AF_INET,SOCK_STREAM|SOCK_NONBLOCK,0);
 ```
-le operazioni non attendono risultati:
-- connect: se non può connettersi subito restituisce -1 e setta **errno** a EINPROGRESS
-- accept: se non si sono richieste restituisce -1 e setta errno a EWOULDBLOCK
-- send: se non riesce ad inviare tutto il messaggio subito (il buffer è pieno), restituisce -1 e setta errno a EWOULDBLOCK
-- recv: se non ci sono messaggi restituisce -1 e setta errno a EWOULDBLOCK
 # I/O multiplexing
 Esistono multiplexing sincrono e asincrono
 ## Multiplexing sincrono
@@ -470,8 +431,6 @@ int main(int argc, char *argv[]){
 }
 ```
 # Socket UDP
-Vedi [[Transport Layer]].
-La bind() per il client può anche essere opzionale. È necessaria se si vuole usare una porta specifica (per superare restrizioni di firewall o NAT)
 Non c'è connessione, quindi non si fanno listen(), connect() o accept(), si utilizza solo socket(), bind() e sendto() e recvfrom().
 ## sendto()
 Invia un messaggio attraverso un socket all'indirizzo specificato.
